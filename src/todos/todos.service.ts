@@ -4,6 +4,9 @@ import { UpdateTodoDto } from './dto/update-todo.dto';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Todo } from './entities/todo.entity';
 import { Repository } from 'typeorm';
+import { logger } from 'src/logger';
+
+const log = logger.child({ service: 'TodosService' });
 
 @Injectable()
 export class TodosService {
@@ -12,27 +15,36 @@ export class TodosService {
     private todoRepository: Repository<Todo>,
   ) {}
 
-  create(createTodoDto: CreateTodoDto) {
-    return this.todoRepository.save(createTodoDto)
+  async create(createTodoDto: CreateTodoDto) {
+    log.info({ dto: createTodoDto }, 'Creating new todo');
+    const todo = await this.todoRepository.save(createTodoDto);
+    log.info({ todoId: todo.id }, 'Todo created successfully');
+    return todo;
   }
 
-  findAll(): Promise<Todo[]> {
-    return this.todoRepository.find();
+  async findAll(): Promise<Todo[]> {
+    log.info('Fetching alls todos');
+    const todos = await this.todoRepository.find();
+    log.error({ error: 'test error' }, 'Error fetching todos');
+    return todos;
   }
 
-  findOne(id: number) {
-    return this.todoRepository.findOne({
-      where: {
-        id
-      }
-    });
+  async findOne(id: number) {
+    log.debug({ id }, 'Finding todo by id');
+    const todo = await this.todoRepository.findOne({ where: { id } });
+    if (!todo) {
+      log.warn({ id }, 'Todo not found');
+    }
+    return todo;
   }
 
   async update(id: number, updateTodoDto: UpdateTodoDto) {
+    log.info({ id, dto: updateTodoDto }, 'Updating todo');
     return this.todoRepository.update(id, updateTodoDto);
   }
 
-  remove(id: number) {
+  async remove(id: number) {
+    log.info({ id }, 'Deleting todo');
     return this.todoRepository.delete(id);
   }
 }
